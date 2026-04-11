@@ -1,0 +1,7 @@
+from pathlib import Path
+import sys
+
+# Ensure swagger project root is importable when running tests from repo root.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))

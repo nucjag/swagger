@@ -1,0 +1,8 @@
+# MCP runtime
+fastmcp==3.2.3
+mcp==1.27.0
+
+# App deps
+python-dotenv==1.2.2
+requests==2.33.1
+pydantic==2.12.5

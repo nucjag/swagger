@@ -1,0 +1,92 @@
+{
+  "name": "takt-api-example",
+  "openapi": "./openapi.local.json",
+  "baseUrl": "http://localhost:8000",
+  "examples": [
+    {
+      "title": "Simple GET without params",
+      "operationId": "health_check_health_get",
+      "method": "GET",
+      "path": "/health",
+      "params": {}
+    },
+    {
+      "title": "POST with JSON body",
+      "operationId": "login_api_v1_auth_login_post",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "body": {
+        "username": "demo",
+        "password": "demo12345"
+      }
+    },
+    {
+      "title": "GET with path params",
+      "operationId": "get_student_api_v1_students__student_id__get",
+      "method": "GET",
+      "path": "/api/v1/students/{student_id}",
+      "params": {
+        "student_id": "S1"
+      }
+    },
+    {
+      "title": "PATCH with path params and body",
+      "operationId": "update_student_api_v1_students__student_id__patch",
+      "method": "PATCH",
+      "path": "/api/v1/students/{student_id}",
+      "params": {
+        "student_id": "S1"
+      },
+      "body": {
+        "grade": 10,
+        "timezone": "Europe/Moscow"
+      }
+    },
+    {
+      "title": "GET with query params",
+      "operationId": "get_intersections_api_v1_schedule_intersections_get",
+      "method": "GET",
+      "path": "/api/v1/schedule/intersections",
+      "query": {
+        "tutor_id": "T1",
+        "student_id": "S1",
+        "from_date": "2026-04-12",
+        "to_date": "2026-04-19"
+      }
+    },
+    {
+      "title": "POST with path params and body",
+      "operationId": "create_booking_hold_api_v1_schedule_bookings_hold_post",
+      "method": "POST",
+      "path": "/api/v1/schedule/bookings/hold",
+      "body": {
+        "tutor_id": "T1",
+        "student_id": "S1",
+        "start_datetime": "2026-04-12T10:00:00Z",
+        "end_datetime": "2026-04-12T11:00:00Z"
+      }
+    },
+    {
+      "title": "DELETE with path params",
+      "operationId": "delete_busy_window_api_v1_students__student_id__busy_windows__window_id__delete",
+      "method": "DELETE",
+      "path": "/api/v1/students/{student_id}/busy-windows/{window_id}",
+      "params": {
+        "student_id": "S1",
+        "window_id": 1
+      }
+    },
+    {
+      "title": "POST with header param",
+      "operationId": "telegram_webhook_api_v1_bot_webhook_post",
+      "method": "POST",
+      "path": "/api/v1/bot/webhook",
+      "headers": {
+        "X-Telegram-Bot-Api-Secret-Token": "test-secret"
+      },
+      "body": {
+        "update_id": 123456
+      }
+    }
+  ]
+}
