@@ -8,8 +8,11 @@ Converts OpenAPI contracts to ready-to-paste TypeScript code:
 - Parameter handling (path, query, body)
 """
 
+import logging
 import re
-from typing import Any, Dict, List, Set, Optional
+from typing import Any
+
+logger = logging.getLogger("openapi-mcp.tools.codegen")
 
 
 class SchemaResolver:
@@ -17,11 +20,11 @@ class SchemaResolver:
 
     def __init__(self, spec_store: Any):
         self.spec_store = spec_store
-        self.visited: Set[str] = set()
+        self.visited: set[str] = set()
 
     def resolve_recursive(
-        self, schema: Dict[str, Any], path: str = ""
-    ) -> Dict[str, Any]:
+        self, schema: dict[str, Any], path: str = ""
+    ) -> dict[str, Any]:
         """
         Recursively resolve all $ref in schema.
 
@@ -83,10 +86,10 @@ class TypeScriptTypeGenerator:
     def __init__(self, spec_store: Any):
         self.spec_store = spec_store
         self.resolver = SchemaResolver(spec_store)
-        self.generated_types: Dict[str, str] = {}
+        self.generated_types: dict[str, str] = {}
 
     def schema_to_typescript(
-        self, schema: Dict[str, Any], type_name: str = "Type"
+        self, schema: dict[str, Any], type_name: str = "Type"
     ) -> str:
         """
         Convert OpenAPI schema to TypeScript type definition.
@@ -104,7 +107,7 @@ class TypeScriptTypeGenerator:
         type_def = self._build_type(resolved)
         return f"type {type_name} = {type_def};"
 
-    def _build_type(self, schema: Dict[str, Any]) -> str:
+    def _build_type(self, schema: dict[str, Any]) -> str:
         """Build type string from schema."""
         if "$ref" in schema:
             ref = schema["$ref"]
@@ -141,7 +144,7 @@ class TypeScriptTypeGenerator:
                 return enum_values
             return "string"
 
-        elif schema_type == "number" or schema_type == "integer":
+        elif schema_type in {"number", "integer"}:
             return "number"
 
         elif schema_type == "boolean":
@@ -156,7 +159,7 @@ class TypeScriptTypeGenerator:
 
         return "unknown"
 
-    def interface_from_schema(self, schema: Dict[str, Any], interface_name: str) -> str:
+    def interface_from_schema(self, schema: dict[str, Any], interface_name: str) -> str:
         """
         Generate TypeScript interface from schema.
 
@@ -195,7 +198,7 @@ class ParameterExtractor:
     def __init__(self, spec_store: Any):
         self.spec_store = spec_store
 
-    def extract_all(self, endpoint_contract: Dict[str, Any]) -> Dict[str, Any]:
+    def extract_all(self, endpoint_contract: dict[str, Any]) -> dict[str, Any]:
         """
         Extract all parameters from endpoint contract.
 
@@ -222,12 +225,12 @@ class ParameterExtractor:
             "all_params": {**path_params, **query_params, **body_params},
         }
 
-    def _extract_path_params(self, path: str) -> Dict[str, str]:
+    def _extract_path_params(self, path: str) -> dict[str, str]:
         """Extract {id}, {userId} etc from path."""
         matches = re.findall(r"\{(\w+)\}", path)
-        return {name: "string" for name in matches}
+        return dict.fromkeys(matches, "string")
 
-    def _extract_query_params(self, parameters: List[Dict[str, Any]]) -> Dict[str, str]:
+    def _extract_query_params(self, parameters: list[dict[str, Any]]) -> dict[str, str]:
         """Extract query parameters."""
         return {
             p["name"]: self._param_type(p.get("schema", {}))
@@ -235,7 +238,7 @@ class ParameterExtractor:
             if p.get("in") == "query"
         }
 
-    def _extract_body_params(self, request_body: Dict[str, Any]) -> Dict[str, str]:
+    def _extract_body_params(self, request_body: dict[str, Any]) -> dict[str, str]:
         """Extract body parameters."""
         if not request_body:
             return {}
@@ -245,11 +248,11 @@ class ParameterExtractor:
 
         if schema.get("type") == "object":
             properties = schema.get("properties", {})
-            return {name: "unknown" for name in properties.keys()}
+            return dict.fromkeys(properties.keys(), "unknown")
 
         return {}
 
-    def _param_type(self, schema: Dict[str, Any]) -> str:
+    def _param_type(self, schema: dict[str, Any]) -> str:
         """Map OpenAPI schema type to string."""
         param_type = schema.get("type", "string")
         if param_type == "integer":
@@ -267,7 +270,7 @@ class FetchFunctionGenerator:
         self.param_extractor = ParameterExtractor(spec_store)
         self.type_generator = TypeScriptTypeGenerator(spec_store)
 
-    def generate(self, endpoint_contract: Dict[str, Any], method_name: str) -> str:
+    def generate(self, endpoint_contract: dict[str, Any], method_name: str) -> str:
         """
         Generate a single fetch function.
 
@@ -295,7 +298,7 @@ class FetchFunctionGenerator:
 }}"""
         return func
 
-    def _build_params_type(self, params: Dict[str, Any], method_name: str) -> str:
+    def _build_params_type(self, params: dict[str, Any], method_name: str) -> str:
         """Build params type for function signature."""
         all_params = params.get("all_params", {})
 
@@ -307,7 +310,7 @@ class FetchFunctionGenerator:
         return f"params: {{{', '.join(fields)}}}"
 
     def _extract_response_type(
-        self, endpoint_contract: Dict[str, Any], method_name: str
+        self, endpoint_contract: dict[str, Any], method_name: str
     ) -> str:
         """Extract response type from endpoint contract."""
         responses = endpoint_contract.get("responses", {})
@@ -332,7 +335,7 @@ class FetchFunctionGenerator:
         return "unknown"
 
     def _build_fetch_body(
-        self, method: str, path: str, params: Dict[str, Any], method_name: str
+        self, method: str, path: str, params: dict[str, Any], method_name: str
     ) -> str:
         """Build the fetch call body."""
         path_params = params.get("path_params", {})
@@ -376,7 +379,7 @@ class FetchFunctionGenerator:
   const response = await fetch(url, {{
     {options_str}
   }});
-  
+
   if (!response.ok) throw new Error(`HTTP ${{response.status}}`);
   return response.json();"""
 
@@ -391,7 +394,7 @@ class TestGenerator:
         self.type_gen = TypeScriptTypeGenerator(spec_store)
         self.param_extractor = ParameterExtractor(spec_store)
 
-    def generate_test_suite(self, endpoint_ids: List[int]) -> str:
+    def generate_test_suite(self, endpoint_ids: list[int]) -> str:
         """
         Generate Jest test suite for list of endpoints.
 
@@ -413,8 +416,11 @@ class TestGenerator:
                 if describe_block:
                     describe_blocks.append(describe_block)
             except Exception as e:
-                # Log error but continue
-                pass
+                logger.warning(
+                    "Failed to generate tests for endpoint %s: %s",
+                    endpoint_id,
+                    e,
+                )
 
         # Combine all parts
         parts = []
@@ -431,7 +437,7 @@ class TestGenerator:
         return """import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import * as client from './client';"""
 
-    def _generate_describe_block(self, contract: Dict[str, Any], method_name: str) -> str:
+    def _generate_describe_block(self, contract: dict[str, Any], method_name: str) -> str:
         """Generate describe block for single endpoint."""
         method = contract.get("method", "GET").upper()
         path = contract.get("path", "/")
@@ -456,10 +462,8 @@ import * as client from './client';"""
   {tests_code}
 }});"""
 
-    def _generate_happy_path_test(self, contract: Dict[str, Any], method_name: str) -> str:
+    def _generate_happy_path_test(self, contract: dict[str, Any], method_name: str) -> str:
         """Generate happy path test (AC-1)."""
-        response_type = self._extract_response_type(contract, method_name)
-
         test_code = f"""it('should {method_name} successfully', async () => {{
     // Given: valid request parameters
     const request = {{}};
@@ -473,7 +477,7 @@ import * as client from './client';"""
 
         return test_code
 
-    def _generate_error_cases_test(self, contract: Dict[str, Any], method_name: str) -> str:
+    def _generate_error_cases_test(self, contract: dict[str, Any], method_name: str) -> str:
         """Generate error case tests (AC-2)."""
         parameters = contract.get("parameters", [])
         required_params = [p for p in parameters if p.get("required")]
@@ -492,7 +496,7 @@ import * as client from './client';"""
 
         return test_code
 
-    def _generate_parameterized_test(self, contract: Dict[str, Any], method_name: str) -> str:
+    def _generate_parameterized_test(self, contract: dict[str, Any], method_name: str) -> str:
         """Generate parameterized test (AC-3)."""
         parameters = contract.get("parameters", [])
         enum_params = [p for p in parameters if p.get("schema", {}).get("enum")]
@@ -521,11 +525,11 @@ import * as client from './client';"""
 
         return test_code
 
-    def _extract_response_type(self, contract: Dict[str, Any], method_name: str) -> str:
+    def _extract_response_type(self, contract: dict[str, Any], method_name: str) -> str:
         """Extract response type name."""
         return f"{method_name[0].upper()}{method_name[1:]}Response"
 
-    def _generate_method_name(self, contract: Dict[str, Any]) -> str:
+    def _generate_method_name(self, contract: dict[str, Any]) -> str:
         """Generate camelCase method name."""
         operation_id = contract.get("operationId", "")
         if operation_id:
@@ -551,9 +555,9 @@ class CodeGenerator:
 
     def generate_client(
         self,
-        endpoint_ids: List[int],
+        endpoint_ids: list[int],
         language: str = "typescript",
-        include: List[str] = None,
+        include: list[str] | None = None,
     ) -> str:
         """
         Generate TypeScript client code for list of endpoints.
@@ -619,7 +623,7 @@ class CodeGenerator:
 
     def generate_tests(
         self,
-        endpoint_ids: List[int],
+        endpoint_ids: list[int],
         framework: str = "jest",
         include_mocks: bool = True,
     ) -> str:
@@ -639,7 +643,7 @@ class CodeGenerator:
 
         return self.test_gen.generate_test_suite(endpoint_ids)
 
-    def _generate_method_name(self, contract: Dict[str, Any]) -> str:
+    def _generate_method_name(self, contract: dict[str, Any]) -> str:
         """Generate camelCase function name from endpoint."""
         operation_id = contract.get("operationId", "")
         if operation_id:
@@ -657,8 +661,8 @@ class CodeGenerator:
         return words[0] + "".join(w.capitalize() for w in words[1:])
 
     def _generate_request_type(
-        self, contract: Dict[str, Any], method_name: str
-    ) -> Optional[str]:
+        self, contract: dict[str, Any], method_name: str
+    ) -> str | None:
         """Generate Request type from contract."""
         request_body = contract.get("requestBody")
         parameters = contract.get("parameters", [])
@@ -671,8 +675,8 @@ class CodeGenerator:
         return f"interface {type_name} {{}}"  # Placeholder
 
     def _generate_response_type(
-        self, contract: Dict[str, Any], method_name: str
-    ) -> Optional[str]:
+        self, contract: dict[str, Any], method_name: str
+    ) -> str | None:
         """Generate Response type from contract."""
         responses = contract.get("responses", {})
 

@@ -8,7 +8,7 @@ Provides:
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 logger = logging.getLogger("openapi-mcp.utils")
 
@@ -37,7 +37,7 @@ class ValidationError(SpecError):
     pass
 
 
-def deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
+def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     """
     Deep merge two dictionaries.
 
@@ -52,7 +52,7 @@ def deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]
     pass
 
 
-def resolve_ref(ref: str, spec: Dict[str, Any]) -> Dict[str, Any]:
+def resolve_ref(ref: str, spec: dict[str, Any]) -> dict[str, Any]:
     """
     Resolve a JSON reference ($ref) in a spec.
 

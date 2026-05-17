@@ -30,6 +30,7 @@ from tools.codegen import CodeGenerator
 from tools.mock_generator import generate_mock_data
 from tools.validator import validate_request
 from tools.auth import get_auth_info
+from tools.debug_request import authenticated_debug_request
 
 # Setup logging
 logging.basicConfig(
@@ -234,6 +235,32 @@ def getAuthInfo() -> dict:
 
 
 @mcp.tool()
+def authenticatedDebugRequest(
+    path: str,
+    method: str,
+    query: dict | None = None,
+    body: dict | None = None,
+    headers: dict | None = None,
+    auth: bool = True,
+    auth_user: str | None = None,
+    auth_role: str | None = None,
+) -> dict:
+    """
+    Execute a live debug request against the target API.
+    """
+    return authenticated_debug_request(
+        path=path,
+        method=method,
+        query=query,
+        body=body,
+        headers=headers,
+        auth=auth,
+        auth_user=auth_user,
+        auth_role=auth_role,
+    )
+
+
+@mcp.tool()
 def generateTests(
     endpoint_ids: list,
     framework: str = "jest",
@@ -309,7 +336,6 @@ def main():
     logger.info("Waiting for MCP connections...")
     logger.info("=" * 60)
 
-    # Start the server (FastMCP 2.x API)
     mcp.run(transport="stdio")
 
 

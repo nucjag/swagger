@@ -9,4 +9,5 @@ Tools provided:
 - mock_generator: generateMockData (S9)
 - validator: validateRequest (v1.1)
 - auth: getAuthInfo (v1.1)
+- debug_request: authenticatedDebugRequest (v1.2)
 """

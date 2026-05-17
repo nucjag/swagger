@@ -4,10 +4,20 @@ Request validation against endpoint contract.
 Implements: validateRequest (S10)
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Any
+import re
+
+from core.spec_store import get_store
+from tools.contract import get_endpoint_contract
+from tools.schema_resolver import resolve_schema
 
 
-def validate_request(path: str, method: str, data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_request(
+    path: str,
+    method: str,
+    data: dict[str, Any],
+    content_type: str | None = None,
+) -> dict[str, Any]:
     """
     Validate request data against endpoint contract.
 
@@ -27,12 +37,7 @@ def validate_request(path: str, method: str, data: Dict[str, Any]) -> Dict[str, 
             ]
         }
     """
-    from core.spec_store import get_store
-    from tools.contract import get_endpoint_contract
-    from tools.schema_resolver import resolve_schema
-
     spec_store = get_store()
-    errors = []
 
     try:
         # Get endpoint contract
@@ -46,8 +51,30 @@ def validate_request(path: str, method: str, data: Dict[str, Any]) -> Dict[str, 
 
         # Get the schema from content
         content = request_body.get("content", {})
-        content_type = list(content.keys())[0] if content else "application/json"
-        schema = content.get(content_type, {}).get("schema", {})
+        selected_content_type = content_type
+        if selected_content_type is None:
+            if "application/json" in content:
+                selected_content_type = "application/json"
+            elif content:
+                selected_content_type = next(iter(content))
+            else:
+                selected_content_type = "application/json"
+
+        if selected_content_type not in content:
+            return {
+                "valid": False,
+                "errors": [
+                    {
+                        "path": "",
+                        "message": (
+                            f"Unsupported content type: {selected_content_type}. "
+                            f"Available: {', '.join(content.keys()) or 'none'}"
+                        ),
+                    }
+                ],
+            }
+
+        schema = content.get(selected_content_type, {}).get("schema", {})
 
         if not schema:
             return {"valid": True, "errors": []}
@@ -68,13 +95,13 @@ def validate_request(path: str, method: str, data: Dict[str, Any]) -> Dict[str, 
     except Exception as e:
         return {
             "valid": False,
-            "errors": [{"path": "", "message": f"Validation error: {str(e)}"}],
+            "errors": [{"path": "", "message": f"Validation error: {e!s}"}],
         }
 
 
 def _validate_against_schema(
-    schema: Dict[str, Any], data: Any, root_path: str = ""
-) -> List[Dict[str, str]]:
+    schema: dict[str, Any], data: Any, root_path: str = ""
+) -> list[dict[str, str]]:
     """
     Recursively validate data against JSON schema.
 
@@ -95,9 +122,6 @@ def _validate_against_schema(
 
     # Handle $ref (should be already resolved, but just in case)
     if "$ref" in schema:
-        from tools.schema_resolver import resolve_schema
-        from core.spec_store import get_store
-
         spec_store = get_store()
         schema_name = schema["$ref"].split("/")[-1]
         resolved_schema = resolve_schema(spec_store, schema_name=schema_name)
@@ -135,7 +159,7 @@ def _validate_against_schema(
     return errors
 
 
-def _validate_type(schema_type: str, data: Any, root_path: str) -> List[Dict[str, str]]:
+def _validate_type(schema_type: str, data: Any, root_path: str) -> list[dict[str, str]]:
     """Validate data type matches schema type."""
     errors = []
 
@@ -183,8 +207,8 @@ def _validate_type(schema_type: str, data: Any, root_path: str) -> List[Dict[str
 
 
 def _validate_object(
-    schema: Dict[str, Any], data: Dict[str, Any], root_path: str
-) -> List[Dict[str, str]]:
+    schema: dict[str, Any], data: dict[str, Any], root_path: str
+) -> list[dict[str, str]]:
     """Validate object properties."""
     errors = []
 
@@ -217,8 +241,8 @@ def _validate_object(
 
 
 def _validate_array(
-    schema: Dict[str, Any], data: List[Any], root_path: str
-) -> List[Dict[str, str]]:
+    schema: dict[str, Any], data: list[Any], root_path: str
+) -> list[dict[str, str]]:
     """Validate array items."""
     errors = []
 
@@ -256,8 +280,8 @@ def _validate_array(
 
 
 def _validate_string(
-    schema: Dict[str, Any], data: str, root_path: str
-) -> List[Dict[str, str]]:
+    schema: dict[str, Any], data: str, root_path: str
+) -> list[dict[str, str]]:
     """Validate string properties."""
     errors = []
 
@@ -287,7 +311,6 @@ def _validate_string(
 
     # Check pattern (basic regex)
     if pattern:
-        import re
 
         try:
             if not re.match(pattern, data):
@@ -305,11 +328,11 @@ def _validate_string(
 
 
 def _validate_numeric(
-    schema: Dict[str, Any],
+    schema: dict[str, Any],
     data: Any,
     root_path: str,
     schema_type: str,
-) -> List[Dict[str, str]]:
+) -> list[dict[str, str]]:
     """Validate numeric properties."""
     errors = []
 

@@ -10,7 +10,7 @@ Provides:
 
 import logging
 import re
-from typing import Optional, Dict, Any, List
+from typing import Any
 
 logger = logging.getLogger("openapi-mcp.spec_store")
 
@@ -19,14 +19,14 @@ class SpecStore:
     """In-memory store for OpenAPI specifications."""
 
     def __init__(self):
-        self._spec: Optional[Dict[str, Any]] = None
+        self._spec: dict[str, Any] | None = None
         self._loaded = False
 
         # Caches for optimization
-        self._endpoints_cache: Optional[Dict[str, List[Dict[str, Any]]]] = None
-        self._schemas_cache: Optional[Dict[str, Any]] = None
+        self._endpoints_cache: dict[str, list[dict[str, Any]]] | None = None
+        self._schemas_cache: dict[str, Any] | None = None
 
-    def set_spec(self, spec: Dict[str, Any]) -> None:
+    def set_spec(self, spec: dict[str, Any]) -> None:
         """
         Set the current OpenAPI spec and clear caches.
 
@@ -38,7 +38,7 @@ class SpecStore:
         self._clear_caches()
         logger.info(f"Spec loaded: {len(spec)} keys")
 
-    def get_spec(self) -> Optional[Dict[str, Any]]:
+    def get_spec(self) -> dict[str, Any] | None:
         """Get the current OpenAPI spec."""
         return self._spec
 
@@ -57,7 +57,7 @@ class SpecStore:
         self._endpoints_cache = None
         self._schemas_cache = None
 
-    def find_endpoints(self, path_pattern: str) -> List[Dict[str, Any]]:
+    def find_endpoints(self, path_pattern: str) -> list[dict[str, Any]]:
         """
         Find endpoints matching a path pattern.
 
@@ -88,9 +88,8 @@ class SpecStore:
             if is_regex:
                 if not pattern_re.match(path):
                     continue
-            else:
-                if path != path_pattern:
-                    continue
+            elif path != path_pattern:
+                continue
 
             # Add this path with all its methods
             for method, operation in path_item.items():
@@ -118,7 +117,7 @@ class SpecStore:
         logger.debug(f"Found {len(results)} endpoints matching pattern")
         return results
 
-    def get_endpoint(self, path: str, method: str) -> Dict[str, Any]:
+    def get_endpoint(self, path: str, method: str) -> dict[str, Any]:
         """
         Get a specific endpoint operation.
 
@@ -147,7 +146,7 @@ class SpecStore:
 
         return paths[path][method_lower]
 
-    def get_all_schemas(self) -> Dict[str, Any]:
+    def get_all_schemas(self) -> dict[str, Any]:
         """
         Get all schemas from components.schemas.
 
@@ -166,7 +165,7 @@ class SpecStore:
         self._schemas_cache = schemas
         return schemas
 
-    def get_schema(self, schema_name: str) -> Dict[str, Any]:
+    def get_schema(self, schema_name: str) -> dict[str, Any]:
         """
         Get a specific schema by name.
 

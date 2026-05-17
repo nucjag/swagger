@@ -5,7 +5,7 @@ Provides resolveSchema tool for expanding $ref references in schemas.
 
 import logging
 import copy
-from typing import Dict, Any, Set
+from typing import Any
 
 logger = logging.getLogger("openapi-mcp.tools.schema_resolver")
 
@@ -17,8 +17,8 @@ def resolve_schema(
     spec_store,
     schema_name: str,
     depth: int = 0,
-    visited: Set[str] = None,
-) -> Dict[str, Any]:
+    visited: set[str] | None = None,
+) -> dict[str, Any]:
     """
     Resolve a schema by expanding all $ref references recursively.
 
@@ -82,7 +82,7 @@ def _resolve_refs_recursive(
     obj: Any,
     spec_store,
     depth: int,
-    visited: Set[str],
+    visited: set[str],
 ) -> None:
     """
     Recursively resolve $ref in an object.
@@ -120,7 +120,7 @@ def _resolve_refs_recursive(
                     logger.debug(f"Circular reference detected for {schema_name}")
         else:
             # Recursively process all values
-            for key, value in obj.items():
+            for _key, value in obj.items():
                 _resolve_refs_recursive(value, spec_store, depth + 1, visited)
 
     elif isinstance(obj, list):

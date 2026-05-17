@@ -4,10 +4,12 @@ Authentication information extraction from OpenAPI spec.
 Implements: getAuthInfo (S11)
 """
 
-from typing import Dict, Any, List
+from typing import Any
+
+from core.spec_store import get_store
 
 
-def get_auth_info() -> Dict[str, Any]:
+def get_auth_info() -> dict[str, Any]:
     """
     Extract authentication requirements from OpenAPI spec.
 
@@ -36,8 +38,6 @@ def get_auth_info() -> Dict[str, Any]:
             }
         }
     """
-    from core.spec_store import get_store
-
     spec_store = get_store()
     spec = spec_store.get_spec()
 
@@ -101,7 +101,7 @@ def get_auth_info() -> Dict[str, Any]:
     return result
 
 
-def _parse_security_scheme(name: str, scheme_def: Dict[str, Any]) -> Dict[str, Any]:
+def _parse_security_scheme(name: str, scheme_def: dict[str, Any]) -> dict[str, Any]:
     """
     Parse a single security scheme definition.
 

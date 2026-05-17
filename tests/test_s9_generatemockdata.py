@@ -103,14 +103,14 @@ class TestBasicMockGeneration:
     def test_string_generation(self, spec_store_with_data):
         """Generate string values."""
         result = generate_mock_data("SimpleString", count=1)
-        assert result["success"] == True
+        assert result["success"] is True
         assert len(result["data"]) == 1
         assert isinstance(result["data"][0], str)
 
     def test_integer_generation(self, spec_store_with_data):
         """Generate integer values within range."""
         result = generate_mock_data("Product", count=3)
-        assert result["success"] == True
+        assert result["success"] is True
         assert len(result["data"]) == 3
 
         for obj in result["data"]:
@@ -120,7 +120,7 @@ class TestBasicMockGeneration:
     def test_boolean_generation(self, spec_store_with_data):
         """Generate boolean values."""
         result = generate_mock_data("Product", count=5)
-        assert result["success"] == True
+        assert result["success"] is True
 
         for obj in result["data"]:
             assert isinstance(obj["inStock"], bool)
@@ -128,7 +128,7 @@ class TestBasicMockGeneration:
     def test_enum_generation(self, spec_store_with_data):
         """Generate enum values from choices."""
         result = generate_mock_data("User", count=10)
-        assert result["success"] == True
+        assert result["success"] is True
 
         # Only check role in objects that have it (not first one with example)
         roles = {obj["role"] for obj in result["data"] if "role" in obj}
@@ -141,7 +141,7 @@ class TestBasicMockGeneration:
     def test_array_generation(self, spec_store_with_data):
         """Generate arrays with items."""
         result = generate_mock_data("User", count=3)
-        assert result["success"] == True
+        assert result["success"] is True
 
         # Check that at least some objects have arrays
         for obj in result["data"]:
@@ -153,7 +153,7 @@ class TestBasicMockGeneration:
     def test_object_generation(self, spec_store_with_data):
         """Generate nested objects."""
         result = generate_mock_data("User", count=2)
-        assert result["success"] == True
+        assert result["success"] is True
 
         # Check that generated (non-example) objects have nested objects
         for obj in result["data"]:
@@ -169,7 +169,7 @@ class TestExamplesAndDefaults:
     def test_example_in_first_object(self, spec_store_with_data):
         """First object should use example if available."""
         result = generate_mock_data("User", count=3)
-        assert result["success"] == True
+        assert result["success"] is True
 
         # First object should have example values
         first = result["data"][0]
@@ -180,7 +180,7 @@ class TestExamplesAndDefaults:
     def test_different_values_in_subsequent_objects(self, spec_store_with_data):
         """Subsequent objects should be generated, not copies of example."""
         result = generate_mock_data("User", count=3)
-        assert result["success"] == True
+        assert result["success"] is True
 
         # Second and third objects should have different values
         ids = [obj["id"] for obj in result["data"]]
@@ -189,10 +189,10 @@ class TestExamplesAndDefaults:
     def test_default_value_usage(self, spec_store_with_data):
         """Use default value for fields marked with default."""
         result = generate_mock_data("Product", count=2)
-        assert result["success"] == True
+        assert result["success"] is True
 
         for obj in result["data"]:
-            assert obj["inStock"] == True  # default value
+            assert obj["inStock"] is True  # default value
 
 
 class TestSchemaResolution:
@@ -201,7 +201,7 @@ class TestSchemaResolution:
     def test_single_level_ref(self, spec_store_with_data):
         """Resolve $ref at one level."""
         result = generate_mock_data("User", count=2)
-        assert result["success"] == True
+        assert result["success"] is True
 
         # Find an object that has address (skip the example object)
         user = next((obj for obj in result["data"] if "address" in obj), None)
@@ -213,7 +213,7 @@ class TestSchemaResolution:
     def test_nested_ref(self, spec_store_with_data):
         """Resolve nested $ref in array items."""
         result = generate_mock_data("UserList", count=1)
-        assert result["success"] == True
+        assert result["success"] is True
 
         user_list = result["data"][0]
         assert isinstance(user_list["items"], list)
@@ -231,20 +231,20 @@ class TestCountParameter:
     def test_count_one(self, spec_store_with_data):
         """Count=1 returns single object."""
         result = generate_mock_data("User", count=1)
-        assert result["success"] == True
+        assert result["success"] is True
         assert len(result["data"]) == 1
 
     def test_count_multiple(self, spec_store_with_data):
         """Count > 1 returns multiple objects."""
         for count in [2, 5, 10]:
             result = generate_mock_data("User", count=count)
-            assert result["success"] == True
+            assert result["success"] is True
             assert len(result["data"]) == count
 
     def test_unique_values_across_objects(self, spec_store_with_data):
         """Each object should have unique generated values."""
         result = generate_mock_data("User", count=5)
-        assert result["success"] == True
+        assert result["success"] is True
 
         emails = [obj["email"] for obj in result["data"]]
         assert len(set(emails)) > 1  # Not all emails should be the same
@@ -256,7 +256,7 @@ class TestStringFormats:
     def test_email_format(self, spec_store_with_data):
         """Generate valid email addresses."""
         result = generate_mock_data("User", count=3)
-        assert result["success"] == True
+        assert result["success"] is True
 
         for i, obj in enumerate(result["data"]):
             email = obj["email"]
@@ -269,7 +269,7 @@ class TestStringFormats:
     def test_uuid_format(self, spec_store_with_data):
         """Generate valid UUIDs."""
         result = generate_mock_data("User", count=2)
-        assert result["success"] == True
+        assert result["success"] is True
 
         for obj in result["data"]:
             uuid = obj["id"]
@@ -280,7 +280,7 @@ class TestStringFormats:
     def test_url_format(self, spec_store_with_data):
         """Generate valid URLs."""
         result = generate_mock_data("URLField", count=2)
-        assert result["success"] == True
+        assert result["success"] is True
 
         for url in result["data"]:
             assert "https://" in url
@@ -288,7 +288,7 @@ class TestStringFormats:
     def test_date_format(self, spec_store_with_data):
         """Generate valid dates."""
         result = generate_mock_data("DateField", count=2)
-        assert result["success"] == True
+        assert result["success"] is True
 
         for date in result["data"]:
             assert isinstance(date, str)
@@ -301,14 +301,14 @@ class TestErrorHandling:
     def test_nonexistent_schema(self, spec_store_with_data):
         """Handle nonexistent schema gracefully."""
         result = generate_mock_data("NonExistentSchema", count=1)
-        assert result["success"] == False
+        assert result["success"] is False
         assert "error" in result
 
     def test_default_count_value(self, spec_store_with_data):
         """Default count should be 1 if not specified."""
         # Call without explicit count parameter
         result = generate_mock_data("User")
-        assert result["success"] == True
+        assert result["success"] is True
         assert len(result["data"]) == 1
 
 
@@ -321,7 +321,7 @@ class TestDataStructure:
         assert isinstance(result, dict)
         assert "success" in result
         assert "data" in result
-        assert result["success"] == True
+        assert result["success"] is True
         assert isinstance(result["data"], list)
 
     def test_error_response_structure(self, spec_store_with_data):
@@ -330,12 +330,12 @@ class TestDataStructure:
         assert isinstance(result, dict)
         assert "success" in result
         assert "error" in result
-        assert result["success"] == False
+        assert result["success"] is False
 
     def test_mock_data_is_json_serializable(self, spec_store_with_data):
         """Generated mocks should be JSON serializable."""
         result = generate_mock_data("User", count=3)
-        assert result["success"] == True
+        assert result["success"] is True
 
         # Should not raise during JSON serialization
         json_str = json.dumps(result["data"])

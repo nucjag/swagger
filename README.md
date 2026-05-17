@@ -11,6 +11,7 @@ This MCP server helps frontend developers by:
 - Creating mock data for testing
 - Generating Jest tests
 - Validating API requests
+- Sending live debug requests with optional auth
 
 ## Installation
 
@@ -83,7 +84,10 @@ This script will:
 │   ├── contract.py           # getEndpointContract
 │   ├── schema_resolver.py    # resolveSchema
 │   ├── codegen.py            # generateClient
-│   └── mock_generator.py     # generateMockData
+│   ├── mock_generator.py     # generateMockData
+│   ├── validator.py          # validateRequest
+│   ├── auth.py               # getAuthInfo
+│   └── debug_request.py      # authenticatedDebugRequest
 │
 └── openapi.local.json        # Cached OpenAPI spec
 ```
@@ -103,24 +107,69 @@ This script will:
 pytest .claude/mcp/swagger -v
 ```
 
-## Tools (MVP 1.0)
+### Testing `authenticatedDebugRequest`
+
+Use these calls to verify the live debug flow:
+
+```text
+authenticatedDebugRequest(path="/public", method="GET", auth=false)
+```
+
+```text
+authenticatedDebugRequest(path="/api/v1/tutors/T_TUT4D7J/students", method="GET", auth_user="T_TUT4D7J")
+```
+
+```text
+authenticatedDebugRequest(path="/protected", method="GET", auth_role="tutor")
+```
+
+For projects that use `login-default`, set these env keys:
+
+```bash
+API_URL=http://takt_api:8000/api/v1
+AUTH_LOGIN_PATH=/api/v1/auth/login-default
+AUTH_LOGIN_BODY_MODE=single_field
+AUTH_LOGIN_IDENTIFIER_FIELD=user_identifier
+AUTH_TOKEN_PATH=access_token
+AUTH_HEADER_NAME=Authorization
+AUTH_HEADER_PREFIX=Bearer
+```
+
+Expected response shape:
+
+- `ok`
+- `status`
+- `response_headers`
+- `body`
+- `elapsed_ms`
+- `request.auth_used`
+- `request.auth_mode`
+
+Important behavior:
+
+- `auth=false` strips any outgoing `Authorization` header
+- raw access tokens are never returned in the response
+- concrete paths like `/api/v1/tutors/T_TUT4D7J/students` are matched to the OpenAPI template path
+
+## Tools (Current: v1.2.0)
 
 | Tool | Status | Purpose |
 |------|--------|---------|
-| searchEndpoints | Planned (S4) | Find endpoints by query, tags, method |
-| getEndpointContract | Planned (S5) | Full request/response contract |
-| resolveSchema | Planned (S6) | Expand $ref references |
-| generateClient | Planned (S7) | Generate TypeScript code |
-| generateMockData | Planned (S9) | Create realistic mock objects |
+| searchEndpoints | Implemented (S4) | Find endpoints by query, tags, method |
+| getEndpointContract | Implemented (S5) | Full request/response contract |
+| resolveSchema | Implemented (S6) | Expand $ref references |
+| generateClient | Implemented (S7) | Generate TypeScript code |
+| generateTests | Implemented (S8) | Generate Jest test suites for endpoints |
+| generateMockData | Implemented (S9) | Create realistic mock objects |
+| validateRequest | Implemented (S10) | Validate payloads against endpoint schema |
+| getAuthInfo | Implemented (S11) | Extract auth requirements from OpenAPI spec |
+| authenticatedDebugRequest | Implemented (S12) | Send live requests with optional auth |
 
-## Future Enhancements (v1.1+)
+## Future Enhancements (v2.0)
 
-- validateRequest — Validate requests before sending
-- getAuthInfo — Authentication details
-- generateTests — Jest/pytest templates
-- getFileUploadPattern — File upload handling
-- compareVersions — Breaking changes detection
-- Caching layer for parsed specs
+- getFileUploadPattern — File upload handling (v2.0)
+- compareVersions — Breaking changes detection (v2.0)
+- Caching layer for parsed specs (v2.0)
 
 ## Release and Publishing
 

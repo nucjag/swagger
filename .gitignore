@@ -56,3 +56,6 @@ Thumbs.db
 
 # OPEN API file 
 openapi.local.json
+
+# sdd work files
+.sdd/

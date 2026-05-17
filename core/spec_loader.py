@@ -10,7 +10,7 @@ Responsible for:
 import logging
 import json
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any
 
 import requests
 
@@ -59,15 +59,15 @@ def load_spec_from_url(url: str, timeout: int = 15) -> dict:
         raise ValueError(
             f"Failed to connect to {url}. "
             f"Check that the URL is valid and reachable.\n"
-            f"Error: {str(e)}"
+            f"Error: {e!s}"
         )
     except json.JSONDecodeError as e:
-        raise ValueError(f"Invalid JSON in spec from {url}. Error: {str(e)}")
+        raise ValueError(f"Invalid JSON in spec from {url}. Error: {e!s}")
     except requests.exceptions.RequestException as e:
-        raise ValueError(f"Error loading spec from {url}: {str(e)}")
+        raise ValueError(f"Error loading spec from {url}: {e!s}")
 
 
-def validate_spec(spec: Dict[str, Any]) -> bool:
+def validate_spec(spec: dict[str, Any]) -> bool:
     """
     Validate that spec is valid OpenAPI 3.0+.
 
@@ -116,7 +116,7 @@ def validate_spec(spec: Dict[str, Any]) -> bool:
     return True
 
 
-def save_spec_to_cache(spec: Dict[str, Any], cache_path: Optional[Path] = None) -> Path:
+def save_spec_to_cache(spec: dict[str, Any], cache_path: Path | None = None) -> Path:
     """
     Save spec to local JSON file for caching.
 
@@ -133,18 +133,18 @@ def save_spec_to_cache(spec: Dict[str, Any], cache_path: Optional[Path] = None) 
     try:
         cache_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(cache_path, "w") as f:
+        with cache_path.open("w") as f:
             json.dump(spec, f, indent=2)
 
         logger.info(f"Spec cached at {cache_path}")
         return cache_path
 
-    except IOError as e:
-        logger.warning(f"Failed to cache spec: {str(e)}")
+    except OSError as e:
+        logger.warning(f"Failed to cache spec: {e!s}")
         raise
 
 
-def load_spec_from_cache(cache_path: Optional[Path] = None) -> Optional[Dict[str, Any]]:
+def load_spec_from_cache(cache_path: Path | None = None) -> dict[str, Any] | None:
     """
     Load spec from local cache file.
 
@@ -165,14 +165,14 @@ def load_spec_from_cache(cache_path: Optional[Path] = None) -> Optional[Dict[str
         return None
 
     try:
-        with open(cache_path, "r") as f:
+        with cache_path.open() as f:
             spec = json.load(f)
 
         logger.info(f"Spec loaded from cache: {cache_path}")
         return spec
 
     except json.JSONDecodeError as e:
-        raise ValueError(f"Corrupted cache file {cache_path}: {str(e)}")
-    except IOError as e:
-        logger.warning(f"Failed to read cache: {str(e)}")
+        raise ValueError(f"Corrupted cache file {cache_path}: {e!s}")
+    except OSError as e:
+        logger.warning(f"Failed to read cache: {e!s}")
         return None

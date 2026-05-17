@@ -4,10 +4,16 @@ Mock data generation from schemas.
 Implements: generateMockData (S9)
 """
 
-from typing import Dict, Any
+import random
+import uuid as uuid_lib
+from datetime import datetime, timedelta
+from typing import Any
+
+from core.spec_store import get_store
+from tools.schema_resolver import resolve_schema
 
 
-def generate_mock_data(schema_name: str, count: int = 1) -> Dict[str, Any]:
+def generate_mock_data(schema_name: str, count: int = 1) -> dict[str, Any]:
     """
     Generate realistic mock data for a schema.
 
@@ -18,9 +24,6 @@ def generate_mock_data(schema_name: str, count: int = 1) -> Dict[str, Any]:
     Returns:
         dict: {"success": true, "data": [objects]}
     """
-    from core.spec_store import get_store
-    from tools.schema_resolver import resolve_schema
-
     spec_store = get_store()
 
     try:
@@ -39,13 +42,13 @@ def generate_mock_data(schema_name: str, count: int = 1) -> Dict[str, Any]:
 
         return {"success": True, "data": mock_objects}
     except KeyError as e:
-        return {"success": False, "error": f"Schema not found: {str(e)}"}
+        return {"success": False, "error": f"Schema not found: {e!s}"}
     except Exception as e:
-        return {"success": False, "error": f"Failed to generate mock data: {str(e)}"}
+        return {"success": False, "error": f"Failed to generate mock data: {e!s}"}
 
 
 def _generate_from_schema(
-    schema: Dict[str, Any], use_examples: bool = False, counter: int = 0, depth: int = 0
+    schema: dict[str, Any], use_examples: bool = False, counter: int = 0, depth: int = 0
 ) -> Any:
     """
     Recursively generate mock value from schema (without external dependencies).
@@ -59,10 +62,6 @@ def _generate_from_schema(
     Returns:
         Generated mock value
     """
-    import random
-    import uuid as uuid_lib
-    from datetime import datetime, timedelta
-
     if depth > 20:  # Prevent deep recursion
         return None
 
@@ -81,16 +80,15 @@ def _generate_from_schema(
     if schema_type == "object":
         obj = {}
         properties = schema.get("properties", {})
-        required = schema.get("required", [])
 
         for prop_name, prop_schema in properties.items():
-            if prop_name in required or True:  # Generate all properties
-                obj[prop_name] = _generate_from_schema(
-                    prop_schema,
-                    use_examples=use_examples,
-                    counter=counter,
-                    depth=depth + 1,
-                )
+            # Generate all properties, including optional ones, so mock objects stay complete.
+            obj[prop_name] = _generate_from_schema(
+                prop_schema,
+                use_examples=use_examples,
+                counter=counter,
+                depth=depth + 1,
+            )
 
         return obj
 
@@ -98,7 +96,7 @@ def _generate_from_schema(
         item_schema = schema.get("items", {"type": "string"})
         min_items = schema.get("minItems", 1)
         max_items = schema.get("maxItems", 3)
-        count = random.randint(min_items, max_items)
+        count = random.randint(min_items, max_items)  # noqa: S311
 
         return [
             _generate_from_schema(item_schema, counter=counter + i, depth=depth + 1)
@@ -111,7 +109,7 @@ def _generate_from_schema(
 
         if schema_format == "email":
             return f"user{counter}@example.com"
-        elif schema_format == "uri" or schema_format == "url":
+        elif schema_format in {"uri", "url"}:
             return f"https://example.com/resource/{counter}"
         elif schema_format == "uuid":
             return str(uuid_lib.UUID(int=counter + 1))

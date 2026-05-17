@@ -4,17 +4,17 @@ Provides searchEndpoints tool for finding endpoints by query, tags, and method.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 logger = logging.getLogger("openapi-mcp.tools.search")
 
 
 def search_endpoints(
     spec_store,
-    query: Optional[str] = None,
-    tags: Optional[List[str]] = None,
-    method: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    query: str | None = None,
+    tags: list[str] | None = None,
+    method: str | None = None,
+) -> list[dict[str, Any]]:
     """
     Search endpoints by query, tags, and HTTP method.
 

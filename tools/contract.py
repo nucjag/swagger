@@ -5,7 +5,7 @@ Provides getEndpointContract tool for retrieving full endpoint specification.
 
 import logging
 import copy
-from typing import Dict, Any
+from typing import Any
 
 logger = logging.getLogger("openapi-mcp.tools.contract")
 
@@ -14,7 +14,7 @@ def get_endpoint_contract(
     spec_store,
     path: str,
     method: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get full contract for an endpoint.
 

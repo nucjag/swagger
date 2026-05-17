@@ -9,15 +9,20 @@ PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/../../.." && pwd)"
 SPEC_DIR="${SCRIPT_DIR}"
 SPEC_FILE="${SPEC_DIR}/openapi.local.json"
 TMP_FILE="${SPEC_FILE}.tmp"
-VENV_PYTHON="${SPEC_DIR}/.venv/bin/python"
+VENV_PYTHON_312="${SPEC_DIR}/.venv312/bin/python"
 
 MCP_SCRIPT="${SPEC_DIR}/openapi-mcp-server.py"
 ENV_FILE="${PROJECT_ROOT}/.env"
 SWAGGER_ENV_FILE="${SPEC_DIR}/.env"
 DEFAULT_SPEC_URL="http://localhost:8087/openapi.json"
 
-echo "Starting OpenAPI MCP server..."
-echo "==============================="
+# Keep FastMCP from emitting banner/update output on stdio transports.
+export FASTMCP_SHOW_SERVER_BANNER="${FASTMCP_SHOW_SERVER_BANNER:-false}"
+export FASTMCP_CHECK_FOR_UPDATES="${FASTMCP_CHECK_FOR_UPDATES:-off}"
+
+# stdout must stay reserved for MCP stdio traffic.
+echo "Starting OpenAPI MCP server..." >&2
+echo "===============================" >&2
 
 mkdir -p "${SPEC_DIR}"
 
@@ -44,7 +49,7 @@ elif [[ -n "${SWAGGER_ENV_SPEC_URL}" ]]; then
   SPEC_URL="${SWAGGER_ENV_SPEC_URL}"
 fi
 
-echo "OPENAPI_SPEC_URL: ${SPEC_URL}"
+echo "OPENAPI_SPEC_URL: ${SPEC_URL}" >&2
 
 # Try to download spec
 download_ok=0
@@ -59,18 +64,18 @@ elif command -v wget >/dev/null 2>&1; then
 fi
 
 if [[ "${download_ok}" -eq 1 ]]; then
-  if [[ -x "${VENV_PYTHON}" ]]; then
-    JSON_PYTHON="${VENV_PYTHON}"
+  if [[ -x "${VENV_PYTHON_312}" ]]; then
+    JSON_PYTHON="${VENV_PYTHON_312}"
   elif command -v python3 >/dev/null 2>&1; then
     JSON_PYTHON="python3"
   else
-    echo "✗ ERROR: Python not found (need python3 or ${VENV_PYTHON})" >&2
+    echo "✗ ERROR: Python not found (need python3 or ${VENV_PYTHON_312})" >&2
     exit 1
   fi
 
   if "${JSON_PYTHON}" -m json.tool "${TMP_FILE}" >/dev/null 2>&1; then
     mv "${TMP_FILE}" "${SPEC_FILE}"
-    echo "✓ Spec downloaded and validated: ${SPEC_FILE}"
+    echo "✓ Spec downloaded and validated: ${SPEC_FILE}" >&2
   else
     rm -f "${TMP_FILE}"
     echo "⚠ WARNING: Invalid JSON from ${SPEC_URL}, using cached spec" >&2
@@ -87,21 +92,21 @@ if [[ ! -s "${SPEC_FILE}" ]]; then
   exit 1
 fi
 
-echo "==============================="
-echo "Starting FastMCP server..."
-echo "==============================="
+echo "===============================" >&2
+echo "Starting FastMCP server..." >&2
+echo "===============================" >&2
 
 # Change to swagger dir so imports work correctly
 cd "${SPEC_DIR}"
 
-if [[ -x "${VENV_PYTHON}" ]]; then
-  PYTHON_BIN="${VENV_PYTHON}"
+if [[ -x "${VENV_PYTHON_312}" ]]; then
+  PYTHON_BIN="${VENV_PYTHON_312}"
 elif command -v python3 >/dev/null 2>&1; then
   PYTHON_BIN="python3"
 else
-  echo "✗ ERROR: Python not found (need python3 or ${VENV_PYTHON})" >&2
+  echo "✗ ERROR: Python not found (need python3 or ${VENV_PYTHON_312})" >&2
   exit 1
 fi
 
-# Run the MCP server
-exec "${PYTHON_BIN}" "${MCP_SCRIPT}"
+# Run the MCP server (unbuffered stdio for deterministic MCP transport)
+exec "${PYTHON_BIN}" -u "${MCP_SCRIPT}"
